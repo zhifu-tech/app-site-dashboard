@@ -1,0 +1,30 @@
+{
+  "name": "site-dashboard",
+  "version": "1.0.0",
+  "description": "一个简洁美观的工具和平台站点汇总仪表板，帮助快速访问常用的在线资源",
+  "type": "module",
+  "main": "js/main.js",
+  "scripts": {
+    "lint": "eslint js/**/*.js",
+    "lint:fix": "eslint js/**/*.js --fix",
+    "format": "prettier --write \"js/**/*.js\" \"*.html\" \"*.css\"",
+    "format:check": "prettier --check \"js/**/*.js\" \"*.html\" \"*.css\"",
+    "dev": "echo '请使用本地服务器运行，例如: python -m http.server 8000'",
+    "build": "echo '当前为纯前端项目，数据通过 API 获取，无需构建步骤。'"
+  },
+  "keywords": [
+    "dashboard",
+    "site-navigation",
+    "resource-aggregator",
+    "web-app"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

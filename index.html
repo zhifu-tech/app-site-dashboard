@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>仪表板 - 网站资源管理</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="dashboard-container">
+      <header class="dashboard-header">
+        <h1 class="dashboard-title">网站资源仪表板</h1>
+        <p class="dashboard-description">快速访问和管理常用网站资源</p>
+      </header>
+
+      <section class="dashboard-search">
+        <div class="search-box">
+          <label for="searchInput" class="sr-only">搜索网站</label>
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="搜索网站名称、描述或标签..."
+            autocomplete="off"
+            aria-label="搜索网站"
+          />
+          <button type="button" class="search-clear" id="searchClear" aria-label="清空搜索" hidden>
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="search-hints">
+          <span class="hint-text hint-text-desktop-only"
+            >提示：使用 <kbd>Ctrl</kbd> + <kbd>K</kbd> 快速聚焦搜索框</span
+          >
+          <span class="hint-text">支持标签过滤，点击标签或输入多个标签（用逗号分隔）</span>
+        </div>
+      </section>
+
+      <section class="dashboard-content" id="dashboardContent" aria-live="polite" aria-busy="false">
+        <div class="loading-state" id="loadingState">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p class="loading-text">正在加载网站数据...</p>
+        </div>
+      </section>
+
+      <template id="siteCardTemplate">
+        <article class="site-card" data-site-id="">
+          <header class="site-card-header">
+            <div class="site-icon" aria-hidden="true"></div>
+            <div class="site-info">
+              <h2 class="site-name">
+                <a href="" target="_blank" rel="noopener noreferrer" class="site-link-main"></a>
+              </h2>
+            </div>
+          </header>
+          <div class="site-card-body">
+            <p class="site-description"></p>
+          </div>
+          <footer class="site-card-footer">
+            <div class="site-tags" role="group" aria-label="网站标签"></div>
+            <div class="site-links" role="group" aria-label="相关链接"></div>
+          </footer>
+        </article>
+      </template>
+    </main>
+
+    <script src="js/main.js" type="module"></script>
+  </body>
+</html>
