@@ -7,7 +7,8 @@
 # 使用方法: ./site-dashboard.sh [command] [options]
 # ============================================
 
-set -e
+# 严格模式：遇到错误立即退出，使用未定义变量报错，管道中任一命令失败则整个管道失败
+set -euo pipefail
 
 # 获取脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,88 +18,34 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # 配置变量
 # ============================================
 
-# 服务器配置
-SERVER_HOST="8.138.183.116"
-SERVER_USER="root"
-SERVER_PORT="22"
+# 服务器配置（导出供共用脚本使用）
+export SERVER_HOST="${SERVER_HOST:-8.138.183.116}"
+export SERVER_USER="${SERVER_USER:-root}"
+export SERVER_PORT="${SERVER_PORT:-22}"
 
 # 应用目录配置
 APP_DIR="/var/www/html/site-dashboard"
 NGINX_CONF_PATH="/etc/nginx/conf.d/site-dashboard.conf"
 SSL_CERT_DIR="/etc/nginx/ssl"
 
-# SSH 配置
-SSH_KEY_NAME="id_rsa_site_dashboard"
-SSH_KEY_PATH="$HOME/.ssh/$SSH_KEY_NAME"
-SSH_ALIAS="site-dashboard-server"
-
 # Docker 配置
-DOCKER_IMAGE_NAME="site-dashboard"
-DOCKER_CONTAINER_NAME="site-dashboard"
-DOCKER_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
-
-# 颜色输出定义
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+readonly DOCKER_IMAGE_NAME="site-dashboard"
+readonly DOCKER_CONTAINER_NAME="site-dashboard"
+readonly DOCKER_COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 
 # ============================================
 # 工具函数
 # ============================================
 
-# 初始化 SSH 连接参数
-init_ssh_connection() {
-  if [ -f "$SSH_KEY_PATH" ]; then
-    SSH_OPTIONS="-i $SSH_KEY_PATH"
-    SSH_TARGET="$SERVER_USER@$SERVER_HOST"
-  elif ssh -o ConnectTimeout=1 -o BatchMode=yes "$SSH_ALIAS" "echo" &>/dev/null 2>&1; then
-    SSH_OPTIONS=""
-    SSH_TARGET="$SSH_ALIAS"
-  else
-    SSH_OPTIONS=""
-    SSH_TARGET="$SERVER_USER@$SERVER_HOST"
-  fi
-}
-
-# 执行 SSH 命令（统一入口）
-# 用法: ssh_exec "command" 或 ssh_exec << 'ENDSSH' ... ENDSSH
-ssh_exec() {
-  if [ $# -eq 0 ]; then
-    # 从标准输入读取（用于 here-document）
-    ssh $SSH_OPTIONS -p ${SERVER_PORT} ${SSH_TARGET}
-  else
-    # 直接执行命令
-    ssh $SSH_OPTIONS -p ${SERVER_PORT} ${SSH_TARGET} "$@"
-  fi
-}
-
-# 加载共用脚本库
+# 加载共用脚本库（必须在 trap 之前加载，以便使用 safe_exit）
 APP_COMMON_DIR="$(cd "$PROJECT_ROOT/../app-common" && pwd)"
+[ -f "$APP_COMMON_DIR/scripts/common-utils.sh" ] && source "$APP_COMMON_DIR/scripts/common-utils.sh"
+[ -f "$APP_COMMON_DIR/scripts/ssh-utils.sh" ] && source "$APP_COMMON_DIR/scripts/ssh-utils.sh"
 [ -f "$APP_COMMON_DIR/scripts/nginx-utils.sh" ] && source "$APP_COMMON_DIR/scripts/nginx-utils.sh"
 [ -f "$APP_COMMON_DIR/scripts/nginx-update.sh" ] && source "$APP_COMMON_DIR/scripts/nginx-update.sh"
 
-# 打印成功消息
-print_success() {
-  echo -e "${GREEN}✓ $1${NC}"
-}
-
-# 打印错误消息
-print_error() {
-  echo -e "${RED}✗ $1${NC}"
-}
-
-# 打印警告消息
-print_warning() {
-  echo -e "${YELLOW}⚠ $1${NC}"
-}
-
-# 打印信息消息
-print_info() {
-  echo -e "${CYAN}ℹ $1${NC}"
-}
+# 设置清理 trap（脚本退出时清理临时文件，必须在加载 common-utils.sh 之后）
+trap 'safe_exit $?' EXIT INT TERM
 
 # ============================================
 # 欢迎界面
@@ -106,23 +53,20 @@ print_info() {
 show_welcome() {
   echo ""
   echo -e "${CYAN}"
-  cat << "EOF"
- ____          __             ____                       __       __                                 __     
-/\  _`\    __ /\ \__         /\  _`\                    /\ \     /\ \                               /\ \    
-\ \,\L\_\ /\_\\ \ ,_\     __ \ \ \/\ \     __       ____\ \ \___ \ \ \____    ___      __     _ __  \_\ \   
- \/_\__ \ \/\ \\ \ \/   /'__`\\ \ \ \ \  /'__`\    /',__\\ \  _ `\\ \ '__`\  / __`\  /'__`\  /\`'__\/'_` \  
-   /\ \L\ \\ \ \\ \ \_ /\  __/ \ \ \_\ \/\ \L\.\_ /\__, `\\ \ \ \ \\ \ \L\ \/\ \L\ \/\ \L\.\_\ \ \//\ \L\ \ 
-   \ `\____\\ \_\\ \__\\ \____\ \ \____/\ \__/.\_\\/\____/ \ \_\ \_\\ \_,__/\ \____/\ \__/.\_\\ \_\\ \___,_\
-    \/_____/ \/_/ \/__/ \/____/  \/___/  \/__/\/_/ \/___/   \/_/\/_/ \/___/  \/___/  \/__/\/_/ \/_/ \/__,_ /
-                                                                                                            
-                                                                                                            
-EOF
+  # 从 welcome.txt 读取欢迎画面
+  local welcome_file="$APP_COMMON_DIR/welcome.txt"
+  if [ -f "$welcome_file" ]; then
+    cat "$welcome_file"
+  else
+    # 如果文件不存在，使用默认的 ASCII 艺术字
+    echo "ZHIFU"
+  fi
   echo -e "${NC}"
   echo -e "${CYAN}              Site Dashboard - 网站资源仪表板@Zhifu's Tech${NC}"
   echo ""
   local cmd="${1:-help}"
   echo -e "${YELLOW}版本: 1.0.0${NC}"
-  echo -e "${YELLOW}服务器: ${SERVER_HOST}${NC}"
+  echo -e "${YELLOW}服务器: ${SERVER_HOST:-未配置}${NC}"
   echo -e "${YELLOW}命令: ${cmd}${NC}"
   echo ""
 }
@@ -138,6 +82,10 @@ show_help() {
   echo ""
   echo -e "${YELLOW}可用命令:${NC}"
   echo ""
+  echo -e "  ${GREEN}SSH 配置:${NC}"
+  echo -e "  ${GREEN}update-ssh-key${NC}     更新 SSH 公钥到服务器"
+  echo ""
+  echo -e "  ${GREEN}Nginx 配置:${NC}"
   echo -e "  ${GREEN}update-nginx${NC}       更新 Nginx 配置文件"
   echo -e "  ${GREEN}start-nginx${NC}        启动 Nginx 服务"
   echo ""
@@ -153,6 +101,7 @@ show_help() {
   echo -e "  ${GREEN}help${NC}                显示此帮助信息"
   echo ""
   echo -e "${YELLOW}示例:${NC}"
+  echo "  ./site-dashboard.sh update-ssh-key"
   echo "  ./site-dashboard.sh update-nginx"
   echo "  ./site-dashboard.sh docker-up"
   echo "  ./site-dashboard.sh docker-deploy"
@@ -160,63 +109,76 @@ show_help() {
 }
 
 # ============================================
+# 更新 SSH 公钥到服务器
+# ============================================
+cmd_update_ssh_key() {
+  print_info "更新 SSH 公钥到服务器 ${SERVER_HOST}..."
+  echo ""
+  
+  if ! update_ssh_key_to_server; then
+    print_error "SSH 公钥更新失败"
+    return 1
+  fi
+  
+  echo ""
+  print_success "SSH 登录认证信息已更新！"
+  print_info "现在可以使用 SSH 密钥无密码登录服务器"
+}
+
+# ============================================
 # 更新 Nginx 配置
 # ============================================
 cmd_update_nginx() {
   # 确定配置文件路径
-  NGINX_LOCAL_CONF="${1:-$SCRIPT_DIR/site-dashboard.nginx.conf}"
-  [ -f "$NGINX_LOCAL_CONF" ] || { print_error "配置文件不存在: ${NGINX_LOCAL_CONF}"; exit 1; }
+  local nginx_local_conf="${1:-$SCRIPT_DIR/site-dashboard.nginx.conf}"
+  check_file_exists "$nginx_local_conf" "配置文件不存在" || return 1
 
-  APP_COMMON_DIR="$(cd "$PROJECT_ROOT/../app-common" && pwd)"
-  SSL_CERT_LOCAL_DIR="$APP_COMMON_DIR/site-dashboard.zhifu.tech_nginx"
+  local ssl_cert_local_dir="$APP_COMMON_DIR/ssl/site-dashboard.zhifu.tech_nginx"
+  local ssl_cert_name="site-dashboard.zhifu.tech"
+  local ssl_cert_key="$ssl_cert_local_dir/${ssl_cert_name}.key"
+  local ssl_cert_bundle_crt="$ssl_cert_local_dir/${ssl_cert_name}_bundle.crt"
+  local ssl_cert_bundle_pem="$ssl_cert_local_dir/${ssl_cert_name}_bundle.pem"
 
-  echo -e "${GREEN}更新 Nginx 配置到服务器 ${SERVER_HOST}...${NC}"
+  print_info "更新 Nginx 配置到服务器 ${SERVER_HOST}..."
 
   # 检查 SSL 证书是否存在
-  SSL_CERT_NAME="site-dashboard.zhifu.tech"
-  SSL_CERT_KEY="$SSL_CERT_LOCAL_DIR/${SSL_CERT_NAME}.key"
-  SSL_CERT_BUNDLE_CRT="$SSL_CERT_LOCAL_DIR/${SSL_CERT_NAME}_bundle.crt"
-  SSL_CERT_BUNDLE_PEM="$SSL_CERT_LOCAL_DIR/${SSL_CERT_NAME}_bundle.pem"
-  
-  SSL_CERT_FILES_EXIST=false
-  if [ -f "$SSL_CERT_KEY" ] && ([ -f "$SSL_CERT_BUNDLE_CRT" ] || [ -f "$SSL_CERT_BUNDLE_PEM" ]); then
-    SSL_CERT_FILES_EXIST=true
+  local ssl_cert_files_exist=false
+  if [ -f "$ssl_cert_key" ] && ([ -f "$ssl_cert_bundle_crt" ] || [ -f "$ssl_cert_bundle_pem" ]); then
+    ssl_cert_files_exist=true
   fi
 
   # 使用共用脚本库更新配置
-  if [ "$SSL_CERT_FILES_EXIST" = true ]; then
+  if [ "$ssl_cert_files_exist" = "true" ]; then
     update_nginx_config \
-      "$NGINX_LOCAL_CONF" \
+      "$nginx_local_conf" \
       "$NGINX_CONF_PATH" \
       "$SSH_OPTIONS" \
       "$SERVER_PORT" \
       "$SSH_TARGET" \
       "ssh_exec" \
-      "$SSL_CERT_NAME" \
-      "$SSL_CERT_LOCAL_DIR" \
+      "$ssl_cert_name" \
+      "$ssl_cert_local_dir" \
       "$SSL_CERT_DIR"
   else
     # 不使用 SSL 证书的简化版本
     prepare_nginx_server "$NGINX_CONF_PATH" "ssh_exec" "$SSH_TARGET"
-    echo -e "${YELLOW}上传配置文件...${NC}"
-    scp $SSH_OPTIONS -P ${SERVER_PORT} "$NGINX_LOCAL_CONF" ${SSH_TARGET}:${NGINX_CONF_PATH}
+    print_info "上传配置文件..."
+    scp $SSH_OPTIONS -P "${SERVER_PORT}" "$nginx_local_conf" "${SSH_TARGET}:${NGINX_CONF_PATH}"
     test_and_reload_nginx "$NGINX_CONF_PATH" "ssh_exec" "$SSH_TARGET"
   fi
 
   echo ""
   print_success "Nginx 配置更新完成！"
-  echo -e "${YELLOW}配置文件: ${NGINX_CONF_PATH}${NC}"
-  [ "$SSL_CERT_FILES_EXIST" = true ] && echo -e "${YELLOW}SSL 证书: ${SSL_CERT_DIR}/site-dashboard.zhifu.tech.*${NC}"
+  print_info "配置文件: ${NGINX_CONF_PATH}"
+  [ "$ssl_cert_files_exist" = "true" ] && print_info "SSL 证书: ${SSL_CERT_DIR}/${ssl_cert_name}.*"
 }
 
 # ============================================
 # 启动 Nginx
 # ============================================
 cmd_start_nginx() {
-  echo -e "${GREEN}检查并启动 Nginx...${NC}"
-  
+  print_info "检查并启动 Nginx..."
   start_nginx_service "ssh_exec" "$SSH_TARGET"
-
   echo ""
   print_success "Nginx 启动完成！"
 }
@@ -227,26 +189,30 @@ cmd_start_nginx() {
 
 # 构建 Docker 镜像
 cmd_docker_build() {
-  echo -e "${GREEN}构建 Docker 镜像...${NC}"
+  print_info "构建 Docker 镜像..."
   echo ""
   
-  cd "$PROJECT_ROOT"
-  [ -f "Dockerfile" ] || { print_error "未找到 Dockerfile"; exit 1; }
+  cd "$PROJECT_ROOT" || return 1
+  check_file_exists "Dockerfile" "未找到 Dockerfile" || return 1
 
-  BASE_IMAGE="nginx:1.25-alpine"
-  if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${BASE_IMAGE}$"; then
-    echo -e "${YELLOW}拉取基础镜像...${NC}"
-    docker pull --platform linux/amd64 "$BASE_IMAGE" || {
-      print_error "基础镜像拉取失败，请手动拉取: docker pull --platform linux/amd64 $BASE_IMAGE"
-      exit 1
-    }
+  local base_image="nginx:1.25-alpine"
+  local build_platform="${BUILD_PLATFORM:-linux/amd64}"
+  
+  # 检查基础镜像是否存在
+  if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${base_image}$"; then
+    print_info "拉取基础镜像..."
+    if ! docker pull --platform "$build_platform" "$base_image"; then
+      print_error "基础镜像拉取失败，请手动拉取: docker pull --platform $build_platform $base_image"
+      return 1
+    fi
   fi
 
-  echo -e "${YELLOW}构建镜像（平台: linux/amd64）...${NC}"
-  docker build --platform linux/amd64 -t "$DOCKER_IMAGE_NAME:latest" . || {
+  local build_msg="构建镜像（平台: ${build_platform}）..."
+  print_info "$build_msg"
+  if ! docker build --platform "$build_platform" -t "${DOCKER_IMAGE_NAME}:latest" .; then
     print_error "Docker 镜像构建失败"
-    exit 1
-  }
+    return 1
+  fi
   
   print_success "Docker 镜像构建完成！"
   docker images | grep "$DOCKER_IMAGE_NAME" || true
@@ -254,34 +220,37 @@ cmd_docker_build() {
 
 # 启动 Docker 容器（本地调试）
 cmd_docker_up() {
-  echo -e "${GREEN}启动 Docker 容器（本地调试模式）...${NC}"
+  print_info "启动 Docker 容器（本地调试模式）..."
   echo ""
   
-  cd "$PROJECT_ROOT"
-  [ -f "docker-compose.yml" ] || { print_error "未找到 docker-compose.yml"; exit 1; }
+  cd "$PROJECT_ROOT" || return 1
+  check_file_exists "docker-compose.yml" "未找到 docker-compose.yml" || return 1
   
-  PORT=${PORT:-8082}
-  if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
-    print_warning "端口 $PORT 已被占用"
+  local port="${PORT:-8082}"
+  if is_port_in_use "$port"; then
+    print_warning "端口 $port 已被占用"
     echo "使用自定义端口: PORT=8081 ./scripts/site-dashboard.sh docker-up"
-    exit 1
+    return 1
   fi
   
-  docker-compose -f "$DOCKER_COMPOSE_FILE" up -d
+  if ! docker-compose -f "$DOCKER_COMPOSE_FILE" up -d; then
+    print_error "Docker 容器启动失败"
+    return 1
+  fi
   
   echo ""
   print_success "Docker 容器已启动！"
-  echo -e "${YELLOW}访问地址: ${GREEN}http://localhost:${PORT}${NC}"
-  echo -e "${YELLOW}查看日志: ${BLUE}./scripts/site-dashboard.sh docker-logs${NC}"
-  echo -e "${YELLOW}停止容器: ${BLUE}./scripts/site-dashboard.sh docker-down${NC}"
+  print_info "访问地址: http://localhost:${port}"
+  print_info "查看日志: ./scripts/site-dashboard.sh docker-logs"
+  print_info "停止容器: ./scripts/site-dashboard.sh docker-down"
 }
 
 # 停止 Docker 容器
 cmd_docker_down() {
-  echo -e "${GREEN}停止 Docker 容器...${NC}"
+  print_info "停止 Docker 容器..."
   echo ""
   
-  cd "$PROJECT_ROOT"
+  cd "$PROJECT_ROOT" || return 1
   docker-compose -f "$DOCKER_COMPOSE_FILE" down
   
   echo ""
@@ -290,35 +259,35 @@ cmd_docker_down() {
 
 # 查看 Docker 容器日志
 cmd_docker_logs() {
-  echo -e "${GREEN}查看 Docker 容器日志...${NC}"
+  print_info "查看 Docker 容器日志..."
   echo ""
   
-  cd "$PROJECT_ROOT"
+  cd "$PROJECT_ROOT" || return 1
   docker-compose -f "$DOCKER_COMPOSE_FILE" logs -f --tail=100
 }
 
 # 进入 Docker 容器 shell
 cmd_docker_shell() {
-  echo -e "${GREEN}进入 Docker 容器 shell...${NC}"
+  print_info "进入 Docker 容器 shell..."
   echo ""
   
-  cd "$PROJECT_ROOT"
+  cd "$PROJECT_ROOT" || return 1
   
-  docker ps | grep -q "$DOCKER_CONTAINER_NAME" || {
+  if ! docker ps --format "{{.Names}}" | grep -q "^${DOCKER_CONTAINER_NAME}$"; then
     print_error "容器未运行，请先启动容器"
     echo "启动容器: ./scripts/site-dashboard.sh docker-up"
-    exit 1
-  }
+    return 1
+  fi
   
   docker exec -it "$DOCKER_CONTAINER_NAME" /bin/sh
 }
 
 # 重启 Docker 容器
 cmd_docker_restart() {
-  echo -e "${GREEN}重启 Docker 容器...${NC}"
+  print_info "重启 Docker 容器..."
   echo ""
   
-  cd "$PROJECT_ROOT"
+  cd "$PROJECT_ROOT" || return 1
   docker-compose -f "$DOCKER_COMPOSE_FILE" restart
   
   echo ""
@@ -327,116 +296,68 @@ cmd_docker_restart() {
 
 # 使用 Docker 部署到服务器
 cmd_docker_deploy() {
-  echo -e "${GREEN}使用 Docker 部署到服务器 ${SERVER_HOST}...${NC}"
+  print_info "使用 Docker 部署到服务器 ${SERVER_HOST}..."
   echo ""
   
-  cd "$PROJECT_ROOT"
+  cd "$PROJECT_ROOT" || return 1
   
   # 1. 构建镜像
-  echo -e "${YELLOW}[1/4] 构建 Docker 镜像...${NC}"
-  BASE_IMAGE="nginx:1.25-alpine"
-  
-  # 检查并拉取基础镜像
-  if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${BASE_IMAGE}$"; then
-    echo -e "${BLUE}本地未找到基础镜像，正在拉取...${NC}"
-    if ! docker pull --platform linux/amd64 "$BASE_IMAGE"; then
-      print_error "基础镜像拉取失败"
-      echo ""
-      echo -e "${YELLOW}可能的解决方案：${NC}"
-      echo ""
-      echo -e "${CYAN}方案 1: 配置 Docker 镜像加速器（推荐）${NC}"
-      echo "  macOS: Docker Desktop → Settings → Docker Engine → 添加 registry-mirrors"
-      echo "  Linux: 编辑 /etc/docker/daemon.json 添加 registry-mirrors"
-      echo ""
-      echo -e "${CYAN}方案 2: 手动拉取镜像${NC}"
-      echo "  docker pull --platform linux/amd64 $BASE_IMAGE"
-      echo ""
-      echo -e "${CYAN}方案 3: 查看详细错误信息${NC}"
-      echo "  docker pull --platform linux/amd64 $BASE_IMAGE"
-      echo ""
-      echo -e "${CYAN}更多帮助：${NC}"
-      echo "  查看 FAQ: cat docs/FAQ.md"
-      echo ""
-      exit 1
-    fi
-    print_success "基础镜像拉取成功"
-  else
-    echo -e "${BLUE}使用本地基础镜像: $BASE_IMAGE${NC}"
+  print_info "[1/4] 构建 Docker 镜像..."
+  if ! cmd_docker_build; then
+    return 1
   fi
-  
-  # 构建镜像
-  if ! docker build --platform linux/amd64 -t "$DOCKER_IMAGE_NAME:latest" .; then
-    print_error "镜像构建失败"
-    echo ""
-    echo -e "${YELLOW}可能的解决方案：${NC}"
-    echo ""
-    echo -e "${CYAN}方案 1: 配置 Docker 镜像加速器（推荐）${NC}"
-    echo "  macOS: Docker Desktop → Settings → Docker Engine → 添加 registry-mirrors"
-    echo "  Linux: 编辑 /etc/docker/daemon.json 添加 registry-mirrors"
-    echo ""
-    echo -e "${CYAN}方案 2: 检查网络连接${NC}"
-    echo "  ping docker.io"
-    echo "  curl -I https://hub.docker.com"
-    echo ""
-    echo -e "${CYAN}方案 3: 查看详细错误信息${NC}"
-    echo "  docker build --platform linux/amd64 -t $DOCKER_IMAGE_NAME:latest . --progress=plain"
-    echo ""
-    echo -e "${CYAN}更多帮助：${NC}"
-    echo "  查看 FAQ: cat docs/FAQ.md"
-    echo ""
-    exit 1
-  fi
-  
-  print_success "Docker 镜像构建完成"
   
   # 2. 导出镜像
-  echo -e "${YELLOW}[2/4] 导出镜像...${NC}"
-  TEMP_IMAGE_FILE=$(mktemp).tar.gz
-  docker save "$DOCKER_IMAGE_NAME:latest" | gzip > "$TEMP_IMAGE_FILE" || {
+  print_info "[2/4] 导出镜像..."
+  local temp_image_file
+  temp_image_file=$(mktemp).tar.gz
+  register_cleanup "$temp_image_file"
+  
+  if ! docker save "${DOCKER_IMAGE_NAME}:latest" | gzip > "$temp_image_file"; then
     print_error "镜像导出失败"
-    rm -f "$TEMP_IMAGE_FILE"
-    exit 1
-  }
+    return 1
+  fi
   
   # 3. 上传镜像
-  echo -e "${YELLOW}[3/4] 上传镜像到服务器...${NC}"
-  scp $SSH_OPTIONS -P ${SERVER_PORT} "$TEMP_IMAGE_FILE" ${SSH_TARGET}:/tmp/site-dashboard-image.tar.gz || {
+  print_info "[3/4] 上传镜像到服务器..."
+  local remote_image_file="/tmp/site-dashboard-image.tar.gz"
+  if ! scp $SSH_OPTIONS -P "${SERVER_PORT}" "$temp_image_file" "${SSH_TARGET}:${remote_image_file}"; then
     print_error "镜像上传失败"
-    rm -f "$TEMP_IMAGE_FILE"
-    exit 1
-  }
+    return 1
+  fi
   
   # 4. 在服务器上加载并运行
-  echo -e "${YELLOW}[4/4] 在服务器上加载镜像并运行容器...${NC}"
-  ssh_exec << 'ENDSSH'
-set -e
-docker load < /tmp/site-dashboard-image.tar.gz
-docker stop site-dashboard 2>/dev/null || true
-docker rm site-dashboard 2>/dev/null || true
-docker run -d --name site-dashboard --restart unless-stopped -p 127.0.0.1:8082:80 site-dashboard:latest
-rm -f /tmp/site-dashboard-image.tar.gz
+  print_info "[4/4] 在服务器上加载镜像并运行容器..."
+  ssh_exec << ENDSSH
+set -euo pipefail
+docker load < ${remote_image_file}
+docker stop ${DOCKER_CONTAINER_NAME} 2>/dev/null || true
+docker rm ${DOCKER_CONTAINER_NAME} 2>/dev/null || true
+docker run -d --name ${DOCKER_CONTAINER_NAME} --restart unless-stopped -p 127.0.0.1:8082:80 ${DOCKER_IMAGE_NAME}:latest
+rm -f ${remote_image_file}
 echo "✓ 容器已启动"
-docker ps | grep site-dashboard || true
+docker ps | grep ${DOCKER_CONTAINER_NAME} || true
 ENDSSH
-  
-  rm -f "$TEMP_IMAGE_FILE"
   
   echo ""
   print_success "Docker 部署完成！"
-  echo -e "${YELLOW}容器端口: ${GREEN}127.0.0.1:8082${NC}"
-  echo -e "${YELLOW}配置 Nginx: ${BLUE}./scripts/site-dashboard.sh update-nginx scripts/site-dashboard.nginx.docker.conf${NC}"
+  print_info "容器端口: 127.0.0.1:8082"
+  print_info "配置 Nginx: ./scripts/site-dashboard.sh update-nginx scripts/site-dashboard.nginx.docker.conf"
 }
 
 # ============================================
 # 主函数
 # ============================================
 main() {
-  show_welcome "$1"
+  show_welcome "${1:-}"
   COMMAND="${1:-help}"
 
   case "$COMMAND" in
+    update-ssh-key)
+      cmd_update_ssh_key
+      ;;
     update-nginx)
-      cmd_update_nginx "$2"
+      cmd_update_nginx "${2:-}"
       ;;
     start-nginx)
       cmd_start_nginx
@@ -474,7 +395,7 @@ main() {
   esac
 }
 
-# 自动初始化 SSH 连接
+# 初始化 SSH 连接（在加载共用脚本后）
 init_ssh_connection
 
 # 执行主函数
