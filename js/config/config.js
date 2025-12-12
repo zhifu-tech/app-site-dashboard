@@ -24,7 +24,7 @@ export const config = {
    * - 生产环境：'/api'（避免混合内容问题）
    * - 开发环境：null 或 'http://localhost:3002/api'
    */
-  apiBaseUrl: '/api', // 相对路径，生产环境通过 Nginx 代理，开发环境自动转换
+  apiBaseUrl: 'https://api.site-dashboard.zhifu.tech',
   
   /**
    * 其他配置项可以在这里添加

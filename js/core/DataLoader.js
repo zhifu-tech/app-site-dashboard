@@ -26,7 +26,7 @@ export class DataLoader {
   async loadSites() {
     try {
       // 1. 获取站点列表
-      const apiUrl = `${this.apiBaseUrl}/sites`;
+      const apiUrl = `${this.apiBaseUrl}/api/sites`;
       console.info(`[DataLoader] 从 API 加载站点列表: ${apiUrl}`);
       
       const response = await fetch(apiUrl);
@@ -48,7 +48,7 @@ export class DataLoader {
       // 2. 并行获取所有站点数据
       const loadPromises = siteFiles.map(async (filename) => {
         try {
-          const siteUrl = `${this.apiBaseUrl}/sites/${encodeURIComponent(filename)}`;
+          const siteUrl = `${this.apiBaseUrl}/api/sites/${encodeURIComponent(filename)}`;
           const siteResponse = await fetch(siteUrl);
           
           if (!siteResponse.ok) {

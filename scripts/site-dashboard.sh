@@ -75,25 +75,10 @@ ssh_exec() {
   fi
 }
 
-# 查找 Nginx 命令路径（统一函数）
-find_nginx_cmd() {
-  if command -v nginx &> /dev/null; then
-    echo "nginx"
-  elif [ -f "/usr/sbin/nginx" ]; then
-    echo "/usr/sbin/nginx"
-  elif [ -f "/usr/local/sbin/nginx" ]; then
-    echo "/usr/local/sbin/nginx"
-  elif [ -f "/sbin/nginx" ]; then
-    echo "/sbin/nginx"
-  else
-    echo ""
-  fi
-}
-
-# 检查 Nginx 服务状态
-check_nginx_status() {
-  systemctl is-active --quiet nginx 2>/dev/null || service nginx status &>/dev/null
-}
+# 加载共用脚本库
+APP_COMMON_DIR="$(cd "$PROJECT_ROOT/../app-common" && pwd)"
+[ -f "$APP_COMMON_DIR/scripts/nginx-utils.sh" ] && source "$APP_COMMON_DIR/scripts/nginx-utils.sh"
+[ -f "$APP_COMMON_DIR/scripts/nginx-update.sh" ] && source "$APP_COMMON_DIR/scripts/nginx-update.sh"
 
 # 打印成功消息
 print_success() {
@@ -182,102 +167,41 @@ cmd_update_nginx() {
   NGINX_LOCAL_CONF="${1:-$SCRIPT_DIR/site-dashboard.nginx.conf}"
   [ -f "$NGINX_LOCAL_CONF" ] || { print_error "配置文件不存在: ${NGINX_LOCAL_CONF}"; exit 1; }
 
-  # 检查证书文件
-  SSL_CERT_LOCAL_DIR="$SCRIPT_DIR/site-dashboard.zhifu.tech_nginx"
-  SSL_CERT_BUNDLE_CRT="$SSL_CERT_LOCAL_DIR/site-dashboard.zhifu.tech_bundle.crt"
-  SSL_CERT_BUNDLE_PEM="$SSL_CERT_LOCAL_DIR/site-dashboard.zhifu.tech_bundle.pem"
-  SSL_CERT_KEY="$SSL_CERT_LOCAL_DIR/site-dashboard.zhifu.tech.key"
-  
-  SSL_CERT_FILES_EXIST=false
-  if [ -f "$SSL_CERT_BUNDLE_CRT" ] && [ -f "$SSL_CERT_KEY" ]; then
-    SSL_CERT_FILES_EXIST=true
-    SSL_CERT_FILE="$SSL_CERT_BUNDLE_CRT"
-  elif [ -f "$SSL_CERT_BUNDLE_PEM" ] && [ -f "$SSL_CERT_KEY" ]; then
-    SSL_CERT_FILES_EXIST=true
-    SSL_CERT_FILE="$SSL_CERT_BUNDLE_PEM"
-  fi
+  APP_COMMON_DIR="$(cd "$PROJECT_ROOT/../app-common" && pwd)"
+  SSL_CERT_LOCAL_DIR="$APP_COMMON_DIR/site-dashboard.zhifu.tech_nginx"
 
   echo -e "${GREEN}更新 Nginx 配置到服务器 ${SERVER_HOST}...${NC}"
 
-  # 服务器端准备
-  ssh_exec << 'ENDSSH'
-set -e
-NGINX_CMD=$(command -v nginx || echo "/usr/sbin/nginx" || echo "/usr/local/sbin/nginx" || echo "/sbin/nginx" || echo "")
-[ -n "$NGINX_CMD" ] && echo "✓ Nginx: $($NGINX_CMD -v 2>&1)" || echo "⚠ Nginx 未找到，将继续上传配置"
+  # 检查 SSL 证书是否存在
+  SSL_CERT_NAME="site-dashboard.zhifu.tech"
+  SSL_CERT_KEY="$SSL_CERT_LOCAL_DIR/${SSL_CERT_NAME}.key"
+  SSL_CERT_BUNDLE_CRT="$SSL_CERT_LOCAL_DIR/${SSL_CERT_NAME}_bundle.crt"
+  SSL_CERT_BUNDLE_PEM="$SSL_CERT_LOCAL_DIR/${SSL_CERT_NAME}_bundle.pem"
+  
+  SSL_CERT_FILES_EXIST=false
+  if [ -f "$SSL_CERT_KEY" ] && ([ -f "$SSL_CERT_BUNDLE_CRT" ] || [ -f "$SSL_CERT_BUNDLE_PEM" ]); then
+    SSL_CERT_FILES_EXIST=true
+  fi
 
-mkdir -p /etc/nginx/conf.d/backup
-[ -f "/etc/nginx/conf.d/site-dashboard.conf" ] && {
-  BACKUP_FILE="/etc/nginx/conf.d/backup/site-dashboard.conf.backup.$(date +%Y%m%d_%H%M%S)"
-  cp /etc/nginx/conf.d/site-dashboard.conf "$BACKUP_FILE"
-  echo "✓ 已备份: $BACKUP_FILE"
-}
-mkdir -p /etc/nginx/conf.d
-ENDSSH
-
-  # 上传配置文件
-  echo -e "${YELLOW}上传配置文件...${NC}"
-  scp $SSH_OPTIONS -P ${SERVER_PORT} "$NGINX_LOCAL_CONF" ${SSH_TARGET}:${NGINX_CONF_PATH}
-
-  # 上传证书（如果存在）
+  # 使用共用脚本库更新配置
   if [ "$SSL_CERT_FILES_EXIST" = true ]; then
-    echo -e "${YELLOW}上传 SSL 证书...${NC}"
-    ssh_exec "mkdir -p ${SSL_CERT_DIR}"
-    
-    SSL_CERT_NAME="site-dashboard.zhifu.tech"
-    [ -f "$SSL_CERT_BUNDLE_CRT" ] && scp $SSH_OPTIONS -P ${SERVER_PORT} "$SSL_CERT_BUNDLE_CRT" ${SSH_TARGET}:${SSL_CERT_DIR}/${SSL_CERT_NAME}_bundle.crt
-    [ -f "$SSL_CERT_BUNDLE_PEM" ] && scp $SSH_OPTIONS -P ${SERVER_PORT} "$SSL_CERT_BUNDLE_PEM" ${SSH_TARGET}:${SSL_CERT_DIR}/${SSL_CERT_NAME}_bundle.pem
-    scp $SSH_OPTIONS -P ${SERVER_PORT} "$SSL_CERT_KEY" ${SSH_TARGET}:${SSL_CERT_DIR}/${SSL_CERT_NAME}.key
-    
-    ssh_exec "chmod 644 ${SSL_CERT_DIR}/${SSL_CERT_NAME}_bundle.* 2>/dev/null || true; chmod 600 ${SSL_CERT_DIR}/${SSL_CERT_NAME}.key; chown root:root ${SSL_CERT_DIR}/${SSL_CERT_NAME}.*"
-  fi
-
-  # 测试并应用配置
-  ssh_exec << 'ENDSSH'
-set -e
-NGINX_CMD=$(command -v nginx || echo "/usr/sbin/nginx" || echo "/usr/local/sbin/nginx" || echo "/sbin/nginx" || echo "")
-
-if [ -n "$NGINX_CMD" ]; then
-  TEST_OUTPUT=$($NGINX_CMD -t 2>&1)
-  if echo "$TEST_OUTPUT" | grep -q "test is successful"; then
-    echo "✓ Nginx 配置语法正确"
+    update_nginx_config \
+      "$NGINX_LOCAL_CONF" \
+      "$NGINX_CONF_PATH" \
+      "$SSH_OPTIONS" \
+      "$SERVER_PORT" \
+      "$SSH_TARGET" \
+      "ssh_exec" \
+      "$SSL_CERT_NAME" \
+      "$SSL_CERT_LOCAL_DIR" \
+      "$SSL_CERT_DIR"
   else
-    echo "⚠ 配置测试失败，尝试兼容模式（移除 http2）..."
-    TEMP_CONF=$(mktemp)
-    sed 's/listen 443 ssl http2;/listen 443 ssl;/g' "/etc/nginx/conf.d/site-dashboard.conf" > "$TEMP_CONF"
-    if $NGINX_CMD -t -c "$TEMP_CONF" 2>&1 | grep -q "test is successful"; then
-      echo "⚠ 已移除 http2 支持"
-      cp "$TEMP_CONF" "/etc/nginx/conf.d/site-dashboard.conf"
-      echo "✓ 已更新为兼容配置"
-      rm -f "$TEMP_CONF"
-    else
-      echo "✗ Nginx 配置语法错误"
-      echo "$TEST_OUTPUT"
-      rm -f "$TEMP_CONF"
-      exit 1
-    fi
+    # 不使用 SSL 证书的简化版本
+    prepare_nginx_server "$NGINX_CONF_PATH" "ssh_exec" "$SSH_TARGET"
+    echo -e "${YELLOW}上传配置文件...${NC}"
+    scp $SSH_OPTIONS -P ${SERVER_PORT} "$NGINX_LOCAL_CONF" ${SSH_TARGET}:${NGINX_CONF_PATH}
+    test_and_reload_nginx "$NGINX_CONF_PATH" "ssh_exec" "$SSH_TARGET"
   fi
-fi
-
-chmod 644 /etc/nginx/conf.d/site-dashboard.conf
-chown root:root /etc/nginx/conf.d/site-dashboard.conf
-
-# 重新加载 Nginx
-if systemctl reload nginx 2>/dev/null || service nginx reload 2>/dev/null; then
-  echo "✓ Nginx 配置已重新加载"
-elif systemctl restart nginx 2>/dev/null || service nginx restart 2>/dev/null; then
-  echo "⚠ 使用 restart 方式重新加载"
-  echo "✓ Nginx 已重启"
-else
-  echo "⚠ 无法重新加载 Nginx（可能未运行）"
-fi
-
-# 检查状态
-if systemctl is-active --quiet nginx 2>/dev/null || service nginx status &>/dev/null; then
-  echo "✓ Nginx 正在运行"
-else
-  echo "⚠ Nginx 未运行，可手动启动: systemctl start nginx"
-fi
-ENDSSH
 
   echo ""
   print_success "Nginx 配置更新完成！"
@@ -291,38 +215,7 @@ ENDSSH
 cmd_start_nginx() {
   echo -e "${GREEN}检查并启动 Nginx...${NC}"
   
-  ssh_exec << 'ENDSSH'
-set -e
-NGINX_CMD=$(command -v nginx || echo "/usr/sbin/nginx" || echo "/usr/local/sbin/nginx" || echo "/sbin/nginx" || echo "")
-
-[ -z "$NGINX_CMD" ] && {
-  echo "✗ Nginx 未安装"
-  [ -f /etc/redhat-release ] && echo "安装: yum install -y nginx"
-  [ -f /etc/debian_version ] && echo "安装: apt-get install -y nginx"
-  exit 1
-}
-
-echo "✓ Nginx: $($NGINX_CMD -v 2>&1)"
-
-# 检查配置语法
-$NGINX_CMD -t 2>&1 || { echo "✗ Nginx 配置语法错误"; exit 1; }
-echo "✓ Nginx 配置语法正确"
-
-# 启动 Nginx
-if systemctl is-active --quiet nginx 2>/dev/null || service nginx status &>/dev/null; then
-  echo "✓ Nginx 已在运行"
-else
-  echo "⚠ 正在启动 Nginx..."
-  systemctl start nginx 2>/dev/null || service nginx start 2>/dev/null || { echo "✗ Nginx 启动失败"; exit 1; }
-  sleep 2
-  systemctl is-active --quiet nginx 2>/dev/null || service nginx status &>/dev/null || { echo "✗ Nginx 启动失败"; exit 1; }
-  echo "✓ Nginx 已成功启动"
-fi
-
-# 设置开机自启
-systemctl enable nginx 2>/dev/null || chkconfig nginx on 2>/dev/null || true
-echo "✓ Nginx 已设置为开机自启"
-ENDSSH
+  start_nginx_service "ssh_exec" "$SSH_TARGET"
 
   echo ""
   print_success "Nginx 启动完成！"

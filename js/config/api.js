@@ -34,14 +34,31 @@ export const apiConfig = {
       if (baseUrl.startsWith('/')) {
         // 开发环境：相对路径无法访问 localhost:3002，需要转换为完整 URL
         if (isLocalhost) {
-          return `${protocol}//${hostname}:3002/api`;
+          return `${protocol}//${hostname}:3002`;
         }
         // 生产环境：直接返回相对路径（通过 Nginx 代理）
         return baseUrl;
       }
       
-      // 完整 URL，直接返回
-      return baseUrl;
+      // 完整 URL：开发环境需要转换为 localhost:3002
+      if (isLocalhost) {
+        // 提取域名部分，替换域名为 localhost:3002（移除路径部分）
+        try {
+          const url = new URL(baseUrl);
+          return `${protocol}//${hostname}:3002`;
+        } catch {
+          // 如果 URL 解析失败，尝试简单替换域名部分
+          return baseUrl.replace(/https?:\/\/[^\/]+/, `${protocol}//${hostname}:3002`);
+        }
+      }
+      
+      // 生产环境：直接返回完整 URL（移除路径部分，只保留域名）
+      try {
+        const url = new URL(baseUrl);
+        return `${url.protocol}//${url.hostname}`;
+      } catch {
+        return baseUrl;
+      }
     }
 
     // 2. 检查是否有全局配置（通过 script 标签的 data 属性）
@@ -52,7 +69,25 @@ export const apiConfig = {
         const baseUrl = apiBase.trim().replace(/\/$/, '');
         // 相对路径在开发环境需要转换
         if (baseUrl.startsWith('/') && isLocalhost) {
-          return `${protocol}//${hostname}:3002/api`;
+          return `${protocol}//${hostname}:3002`;
+        }
+        // 完整 URL 在开发环境需要转换
+        if (isLocalhost && !baseUrl.startsWith('/')) {
+          try {
+            const url = new URL(baseUrl);
+            return `${protocol}//${hostname}:3002`;
+          } catch {
+            return baseUrl.replace(/https?:\/\/[^\/]+/, `${protocol}//${hostname}:3002`);
+          }
+        }
+        // 生产环境：移除路径部分，只保留域名
+        if (!baseUrl.startsWith('/')) {
+          try {
+            const url = new URL(baseUrl);
+            return `${url.protocol}//${url.hostname}`;
+          } catch {
+            return baseUrl;
+          }
         }
         return baseUrl;
       }
@@ -65,7 +100,25 @@ export const apiConfig = {
         const baseUrl = apiBase.trim().replace(/\/$/, '');
         // 相对路径在开发环境需要转换
         if (baseUrl.startsWith('/') && isLocalhost) {
-          return `${protocol}//${hostname}:3002/api`;
+          return `${protocol}//${hostname}:3002`;
+        }
+        // 完整 URL 在开发环境需要转换
+        if (isLocalhost && !baseUrl.startsWith('/')) {
+          try {
+            const url = new URL(baseUrl);
+            return `${protocol}//${hostname}:3002`;
+          } catch {
+            return baseUrl.replace(/https?:\/\/[^\/]+/, `${protocol}//${hostname}:3002`);
+          }
+        }
+        // 生产环境：移除路径部分，只保留域名
+        if (!baseUrl.startsWith('/')) {
+          try {
+            const url = new URL(baseUrl);
+            return `${url.protocol}//${url.hostname}`;
+          } catch {
+            return baseUrl;
+          }
         }
         return baseUrl;
       }
@@ -73,7 +126,7 @@ export const apiConfig = {
 
     // 4. 默认值：从当前域名推断（仅限 localhost 环境）
     if (isLocalhost) {
-      return `${protocol}//${hostname}:3002/api`;
+      return `${protocol}//${hostname}:3002`;
     }
     
     // 生产环境必须显式配置
