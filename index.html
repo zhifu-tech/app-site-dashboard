@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>仪表板 - 网站资源管理</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -52,6 +53,21 @@
               <h2 class="site-name">
                 <a href="" target="_blank" rel="noopener noreferrer" class="site-link-main"></a>
               </h2>
+            </div>
+            <div class="site-card-actions">
+              <button type="button" class="site-action-more" aria-label="更多操作" title="更多操作" aria-expanded="false">
+                <i class="fas fa-ellipsis-vertical site-action-icon" aria-hidden="true"></i>
+              </button>
+              <div class="site-action-menu" role="menu">
+                <button type="button" class="site-action-menu-item site-action-edit" role="menuitem" aria-label="编辑站点">
+                  <i class="fas fa-pen-to-square site-action-menu-icon" aria-hidden="true"></i>
+                  <span class="site-action-menu-text">编辑</span>
+                </button>
+                <button type="button" class="site-action-menu-item site-action-delete" role="menuitem" aria-label="删除站点">
+                  <i class="fas fa-trash-can site-action-menu-icon" aria-hidden="true"></i>
+                  <span class="site-action-menu-text">删除</span>
+                </button>
+              </div>
             </div>
           </header>
           <div class="site-card-body">

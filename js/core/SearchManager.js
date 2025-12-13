@@ -81,5 +81,70 @@ export class SearchManager {
     }
     return Array.from(this.activeTags);
   }
+
+  /**
+   * 检测输入是否为有效的 URL
+   * @param {string} input - 输入字符串
+   * @returns {string|null} 如果是有效 URL 则返回规范化后的 URL，否则返回 null
+   */
+  detectUrl(input) {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    // 尝试解析 URL
+    try {
+      // 如果输入不包含协议，尝试添加 https://
+      let urlString = trimmed;
+      if (!/^https?:\/\//i.test(urlString)) {
+        urlString = `https://${urlString}`;
+      }
+
+      const url = new URL(urlString);
+      // 只接受 http 和 https 协议
+      if (url.protocol === "http:" || url.protocol === "https:") {
+        // 规范化 URL：移除末尾斜杠（除了根路径）
+        const normalizedUrl = url.href.replace(/\/$/, "") || url.href;
+        return normalizedUrl;
+      }
+    } catch (error) {
+      // URL 解析失败，不是有效的 URL
+      return null;
+    }
+
+    return null;
+  }
+
+  /**
+   * 检查站点列表中是否已存在该 URL
+   * @param {Array<Object>} sites - 站点列表
+   * @param {string} url - 要检查的 URL
+   * @returns {boolean} 是否存在
+   */
+  siteExists(sites, url) {
+    if (!sites || !url) {
+      return false;
+    }
+
+    // 规范化 URL 用于比较（移除协议、www、末尾斜杠等）
+    const normalizeUrlForCompare = (urlStr) => {
+      try {
+        const urlObj = new URL(urlStr);
+        let hostname = urlObj.hostname.replace(/^www\./i, "");
+        let pathname = urlObj.pathname.replace(/\/$/, "") || "/";
+        return `${hostname}${pathname}`.toLowerCase();
+      } catch {
+        return urlStr.toLowerCase();
+      }
+    };
+
+    const normalizedTargetUrl = normalizeUrlForCompare(url);
+    return sites.some((site) => {
+      if (!site.url) return false;
+      const normalizedSiteUrl = normalizeUrlForCompare(site.url);
+      return normalizedSiteUrl === normalizedTargetUrl;
+    });
+  }
 }
 

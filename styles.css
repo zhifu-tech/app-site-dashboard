@@ -313,6 +313,155 @@ kbd {
   min-width: 0;
 }
 
+.site-card-actions {
+  position: relative;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.site-card:hover .site-card-actions {
+  opacity: 1;
+}
+
+.site-action-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.site-action-more:hover {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border-secondary);
+  color: var(--color-text-primary);
+}
+
+.site-action-more:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.site-action-more[aria-expanded="true"] {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-border);
+  color: var(--color-primary);
+}
+
+.site-action-menu {
+  position: absolute;
+  top: calc(100% + var(--spacing-xs));
+  right: 0;
+  min-width: 120px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 16px var(--color-shadow);
+  padding: var(--spacing-xs);
+  display: none;
+  flex-direction: column;
+  z-index: 10;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all var(--transition-fast);
+}
+
+.site-action-menu.site-action-menu-open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.site-action-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.site-action-menu-item:hover {
+  background: var(--color-bg-secondary);
+}
+
+.site-action-menu-item:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.site-action-menu-item.site-action-edit:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.site-action-menu-item.site-action-delete:hover {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.site-action-menu-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  min-width: 1em;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.site-action-menu-text {
+  font-weight: 500;
+  flex: 1;
+}
+
+.site-action-icon {
+  display: inline-block;
+  font-size: 0.875rem;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  vertical-align: middle;
+}
+
+.site-action-menu-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+  .site-card-actions {
+    opacity: 1;
+  }
+}
+
 .site-name {
   margin: 0;
   font-size: 1.1rem;
@@ -526,6 +675,525 @@ kbd {
 .google-search-link:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px var(--color-shadow-hover);
+}
+
+/* ============================================
+   添加站点按钮样式
+   ============================================ */
+.add-site-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 4px 16px var(--color-shadow-hover);
+  margin-top: var(--spacing-md);
+}
+
+.add-site-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px var(--color-shadow-hover);
+}
+
+.add-site-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-site-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.add-site-icon {
+  font-size: 1.2rem;
+}
+
+.add-site-text {
+  font-weight: 500;
+}
+
+/* ============================================
+   添加站点卡片样式
+   ============================================ */
+.add-site-card {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-primary);
+  border: 2px dashed var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-base);
+}
+
+.add-site-card:hover {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-light);
+}
+
+.add-site-card-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.add-site-card-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.add-site-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-site-card-title {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.add-site-card-url {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+
+.add-site-card-button {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.add-site-card-button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--color-shadow-hover);
+}
+
+.add-site-card-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-site-card-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .add-site-card-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-site-card-button {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   AI平台按钮样式
+   ============================================ */
+.ai-platforms {
+  margin-top: var(--spacing-lg);
+  text-align: center;
+}
+
+.ai-platforms-title {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.ai-platforms-list {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ai-platform-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-primary);
+  border: 2px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px var(--color-shadow);
+}
+
+.ai-platform-button:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary-border);
+  box-shadow: 0 4px 16px var(--color-shadow-hover);
+  background: var(--color-primary-light);
+}
+
+.ai-platform-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ai-platform-icon {
+  font-size: 1.2rem;
+}
+
+.ai-platform-name {
+  font-weight: 500;
+}
+
+.ai-platform-yuanbao:hover {
+  border-color: #0070f3;
+  background: rgba(0, 112, 243, 0.1);
+}
+
+.ai-platform-chatgpt:hover {
+  border-color: #10a37f;
+  background: rgba(16, 163, 127, 0.1);
+}
+
+/* 卡片中的AI平台按钮 */
+.add-site-card-actions {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.ai-platforms-title-small {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.ai-platforms-list-small {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.ai-platforms-list-small .ai-platform-button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   弹窗样式
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-base), visibility var(--transition-base);
+  padding: var(--spacing-lg);
+}
+
+.modal-overlay.modal-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-container {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.9);
+  transition: transform var(--transition-base);
+}
+
+.modal-overlay.modal-open .modal-container {
+  transform: scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  line-height: 1;
+  transition: color var(--transition-fast);
+  border-radius: var(--radius-sm);
+}
+
+.modal-close:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.modal-button {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modal-button-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.modal-button-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--color-shadow-hover);
+}
+
+.modal-button-secondary {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-primary);
+}
+
+.modal-button-secondary:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.modal-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   YAML编辑器样式
+   ============================================ */
+.yaml-editor-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.yaml-editor-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.yaml-editor {
+  width: 100%;
+  min-height: 400px;
+  padding: var(--spacing-md);
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro", monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  resize: vertical;
+  tab-size: 2;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+.yaml-editor:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary-border);
+}
+
+.yaml-editor-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ============================================
+   站点预览样式
+   ============================================ */
+.preview-site {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.preview-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.preview-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-name {
+  margin: 0 0 var(--spacing-xs) 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.preview-url {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.preview-url:hover {
+  text-decoration: underline;
+}
+
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.preview-section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.preview-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.preview-links {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  list-style: disc;
+}
+
+.preview-links li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.preview-links a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.preview-links a:hover {
+  text-decoration: underline;
+}
+
+.preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.preview-tag {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .modal-container {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: var(--spacing-md);
+  }
+
+  .ai-platforms-list {
+    flex-direction: column;
+  }
+
+  .ai-platform-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* ============================================
