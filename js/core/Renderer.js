@@ -220,8 +220,17 @@ export class Renderer {
     const aiPlatformButtons = detectedUrl
       ? `
         <div class="ai-platforms">
-          <p class="ai-platforms-title">使用 AI 生成站点信息：</p>
+          <p class="ai-platforms-title">添加站点：</p>
           <div class="ai-platforms-list">
+            <button 
+              type="button" 
+              class="create-site-button" 
+              data-url="${escapedUrl}"
+              aria-label="新建站点"
+            >
+              <span class="ai-platform-icon" aria-hidden="true">➕</span>
+              <span class="ai-platform-name">新建站点</span>
+            </button>
             ${aiPlatforms.map(platform => `
               <button 
                 type="button" 
@@ -294,8 +303,17 @@ export class Renderer {
           <p class="add-site-card-url">${this.escapeHtml(url)}</p>
         </div>
         <div class="add-site-card-actions">
-          <p class="ai-platforms-title-small">使用 AI 生成：</p>
+          <p class="ai-platforms-title-small">添加站点：</p>
           <div class="ai-platforms-list-small">
+            <button 
+              type="button" 
+              class="create-site-button" 
+              data-url="${this.escapeHtml(url)}"
+              aria-label="新建站点"
+            >
+              <span class="ai-platform-icon" aria-hidden="true">➕</span>
+              <span class="ai-platform-name">新建站点</span>
+            </button>
             ${aiPlatforms.map(platform => `
               <button 
                 type="button" 

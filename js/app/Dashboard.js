@@ -23,6 +23,7 @@ export class Dashboard {
     this.sites = [];
     this.filteredSites = [];
     this.detectedUrl = null;
+    this.pendingYamlData = null; // 保存从AI平台返回的待处理YAML数据
 
     this.elements = {
       container: document.getElementById("dashboardContent"),
@@ -95,6 +96,14 @@ export class Dashboard {
           this.handleTagClick(tag);
         }
       }
+      // 新建站点按钮点击事件
+      else if (e.target.closest(".create-site-button")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const button = e.target.closest(".create-site-button");
+        const url = button?.dataset.url;
+        this.handleCreateNewSite(url);
+      }
       // AI平台按钮点击事件
       else if (e.target.closest(".ai-platform-button")) {
         e.preventDefault();
@@ -147,8 +156,14 @@ export class Dashboard {
       }
     });
 
-    // 检查URL参数，看是否有从AI平台返回的数据
+    // 检查URL参数，看是否有从AI平台返回的数据（首次加载）
     this.checkUrlParams();
+
+    // 监听从AI平台提示弹窗中点击"新建站点"的事件
+    window.addEventListener("createSiteFromPrompt", (e) => {
+      const url = e.detail?.url;
+      this.handleCreateNewSite(url);
+    });
   }
 
   /**
@@ -226,6 +241,11 @@ export class Dashboard {
    * 渲染界面
    */
   render() {
+    // 如果有待处理的YAML数据，显示提示条
+    if (this.pendingYamlData) {
+      this.showPendingDataNotification();
+    }
+
     if (this.filteredSites.length === 0) {
       const query = this.elements.searchInput.value.trim();
       this.renderer.showEmpty(this.elements.container, query, this.detectedUrl);
@@ -236,6 +256,151 @@ export class Dashboard {
     this.renderer.renderSites(this.filteredSites, this.elements.container, this.detectedUrl);
 
     this.elements.container.setAttribute("aria-busy", "false");
+  }
+
+  /**
+   * 显示待处理数据的提示通知
+   */
+  showPendingDataNotification() {
+    // 检查是否已经显示过通知
+    let notification = document.getElementById("pendingDataNotification");
+    if (notification) {
+      return; // 已经显示过，不重复显示
+    }
+
+    // 创建通知元素
+    notification = document.createElement("div");
+    notification.id = "pendingDataNotification";
+    notification.className = "pending-data-notification";
+    notification.setAttribute("role", "alert");
+    notification.innerHTML = `
+      <div class="pending-data-notification-content">
+        <div class="pending-data-notification-icon" aria-hidden="true">📋</div>
+        <div class="pending-data-notification-text">
+          <strong>检测到从AI平台返回的站点数据</strong>
+          <span>点击下方按钮新建站点信息</span>
+        </div>
+        <div class="pending-data-notification-actions">
+          <button type="button" class="pending-data-button pending-data-button-primary" id="createSiteFromPendingData">
+            新建站点
+          </button>
+          <button type="button" class="pending-data-button pending-data-button-secondary" id="dismissPendingData">
+            稍后处理
+          </button>
+        </div>
+      </div>
+    `;
+
+    // 插入到搜索框下方
+    const searchSection = document.querySelector(".dashboard-search");
+    if (searchSection && searchSection.nextElementSibling) {
+      searchSection.parentNode.insertBefore(notification, searchSection.nextElementSibling);
+    } else {
+      // 如果找不到合适的位置，插入到body顶部
+      document.body.insertBefore(notification, document.body.firstChild);
+    }
+
+    // 绑定事件
+    const createBtn = notification.querySelector("#createSiteFromPendingData");
+    const dismissBtn = notification.querySelector("#dismissPendingData");
+
+    createBtn.addEventListener("click", () => {
+      this.handleCreateSiteFromPendingData();
+    });
+
+    dismissBtn.addEventListener("click", () => {
+      this.dismissPendingDataNotification();
+    });
+  }
+
+  /**
+   * 处理从待处理数据创建站点
+   */
+  handleCreateSiteFromPendingData() {
+    if (!this.pendingYamlData) {
+      return;
+    }
+
+    // 关闭通知
+    this.dismissPendingDataNotification();
+
+    // 显示弹窗编辑YAML数据
+    this.modal.showYamlContent(this.pendingYamlData, async (editedYaml) => {
+      try {
+        // 解析YAML数据
+        const siteData = this.parseYamlFromUrl(editedYaml);
+        if (siteData) {
+          // 保存站点数据
+          await this.saveSiteData(siteData);
+          // 清空待处理数据
+          this.pendingYamlData = null;
+        } else {
+          alert("YAML格式错误，无法解析站点数据");
+        }
+      } catch (error) {
+        console.error("[Dashboard] 解析站点数据失败:", error);
+        alert(`解析站点数据失败: ${error.message || "未知错误"}`);
+      }
+    });
+  }
+
+  /**
+   * 关闭待处理数据通知
+   */
+  dismissPendingDataNotification() {
+    const notification = document.getElementById("pendingDataNotification");
+    if (notification) {
+      notification.remove();
+    }
+    // 注意：不清空 pendingYamlData，用户可能稍后还想处理
+  }
+
+  /**
+   * 处理新建站点按钮点击
+   * @param {string} url - 站点 URL（可选）
+   */
+  handleCreateNewSite(url = null) {
+    // 生成空白的YAML模板
+    const yamlTemplate = this.generateEmptyYamlTemplate(url);
+    
+    // 显示新建站点弹窗
+    this.modal.showYamlContent(yamlTemplate, async (editedYaml) => {
+      try {
+        // 解析YAML数据
+        const siteData = this.parseYamlFromUrl(editedYaml);
+        if (siteData) {
+          // 保存站点数据
+          await this.saveSiteData(siteData);
+        } else {
+          alert("YAML格式错误，无法解析站点数据");
+        }
+      } catch (error) {
+        console.error("[Dashboard] 创建站点失败:", error);
+        alert(`创建站点失败: ${error.message || "未知错误"}`);
+      }
+    }, false);
+  }
+
+  /**
+   * 生成空白的YAML模板
+   * @param {string} url - 站点 URL（可选）
+   * @returns {string} YAML模板字符串
+   */
+  generateEmptyYamlTemplate(url = null) {
+    const lines = [
+      "group: ai-tools",
+      `name: ${url ? new URL(url).hostname : "新站点名称"}`,
+      `url: ${url || "https://example.com/"}`,
+      "icon: 🔗",
+      "description: 请输入站点描述",
+      "links:",
+      "  - text: 官网",
+      "    url: ",
+      "tags:",
+      "  - 标签1",
+      "  - 标签2"
+    ];
+    return lines.join("\n");
   }
 
   /**
@@ -257,11 +422,8 @@ export class Dashboard {
       // 再次复制完整提示（包含返回URL）
       await this.rulesLoader.copyToClipboard(fullPrompt);
       
-      // 跳转到AI平台
-      window.open(targetUrl, "_blank");
-      
-      // 显示提示信息
-      alert(`规则和提示已复制到剪切板！\n\n操作步骤：\n1. 在AI平台中粘贴提示信息\n2. 生成站点数据（YAML格式）\n3. 复制生成的YAML数据\n4. 返回此页面，将YAML数据添加到URL参数 siteData 中\n\n或者：将YAML数据保存到localStorage（键名：pendingSiteData）后刷新页面`);
+      // 显示提示弹窗（包含新建站点按钮）
+      this.modal.showAiPlatformPrompt(url, targetUrl, fullPrompt);
     } catch (error) {
       console.error("[Dashboard] 处理AI平台点击失败:", error);
       alert(`操作失败: ${error.message || "未知错误"}`);
@@ -270,6 +432,8 @@ export class Dashboard {
 
   /**
    * 检查URL参数，看是否有从AI平台返回的数据
+   * 修改策略：不再自动打开弹窗，而是保存数据并显示提示
+   * 支持多次检测（页面返回时）
    */
   checkUrlParams() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -279,33 +443,43 @@ export class Dashboard {
     const storedSiteData = localStorage.getItem("pendingSiteData");
     
     let yamlContent = null;
+    let hasNewData = false;
+    
     if (siteDataParam) {
       yamlContent = decodeURIComponent(siteDataParam);
-      // 清理URL参数
-      const newUrl = window.location.pathname + (urlParams.get("siteUrl") ? `?siteUrl=${urlParams.get("siteUrl")}` : "");
-      window.history.replaceState({}, "", newUrl);
+      // 检查是否是新数据（与已保存的不同）
+      if (this.pendingYamlData !== yamlContent) {
+        hasNewData = true;
+        // 清理URL参数
+        const newUrl = window.location.pathname + (urlParams.get("siteUrl") ? `?siteUrl=${urlParams.get("siteUrl")}` : "");
+        window.history.replaceState({}, "", newUrl);
+      }
     } else if (storedSiteData) {
       yamlContent = storedSiteData;
-      localStorage.removeItem("pendingSiteData");
+      // 检查是否是新数据
+      if (this.pendingYamlData !== yamlContent) {
+        hasNewData = true;
+        localStorage.removeItem("pendingSiteData");
+      } else {
+        // 如果数据相同，也清理localStorage
+        localStorage.removeItem("pendingSiteData");
+      }
     }
     
-    if (yamlContent) {
-      // 显示原始YAML文本，不进行解析预览
-      this.modal.showYamlContent(yamlContent, async (editedYaml) => {
-        try {
-          // 解析YAML数据
-          const siteData = this.parseYamlFromUrl(editedYaml);
-          if (siteData) {
-            // 保存站点数据
-            await this.saveSiteData(siteData);
-          } else {
-            alert("YAML格式错误，无法解析站点数据");
-          }
-        } catch (error) {
-          console.error("[Dashboard] 解析站点数据失败:", error);
-          alert(`解析站点数据失败: ${error.message || "未知错误"}`);
-        }
-      });
+    if (yamlContent && hasNewData) {
+      // 保存待处理的YAML数据，不立即打开弹窗
+      this.pendingYamlData = yamlContent;
+      console.info("[Dashboard] 检测到待处理的站点数据，等待用户点击新建按钮");
+      
+      // 如果已经有通知显示，更新它；否则在下次render时显示
+      const existingNotification = document.getElementById("pendingDataNotification");
+      if (existingNotification) {
+        // 如果通知已存在，移除它以便重新显示（使用新数据）
+        existingNotification.remove();
+      }
+      
+      // 触发重新渲染以显示通知
+      this.render();
     }
   }
 

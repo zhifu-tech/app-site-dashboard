@@ -234,6 +234,128 @@ kbd {
 }
 
 /* ============================================
+   待处理数据通知条
+   ============================================ */
+.pending-data-notification {
+  margin: var(--spacing-lg) auto;
+  max-width: 800px;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border: 2px solid var(--color-primary-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 4px 16px var(--color-shadow);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pending-data-notification-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.pending-data-notification-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.pending-data-notification-text {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.pending-data-notification-text strong {
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pending-data-notification-text span {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.pending-data-notification-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.pending-data-button {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pending-data-button-primary {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.pending-data-button-primary:hover {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--color-shadow-hover);
+}
+
+.pending-data-button-primary:active {
+  transform: translateY(0);
+}
+
+.pending-data-button-secondary {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-primary);
+}
+
+.pending-data-button-secondary:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-secondary);
+}
+
+.pending-data-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .pending-data-notification-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pending-data-notification-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .pending-data-button {
+    width: 100%;
+  }
+}
+
+/* ============================================
    网站卡片网格
    ============================================ */
 .sites-grid {
@@ -901,6 +1023,40 @@ svg.site-action-icon path {
   background: rgba(16, 163, 127, 0.1);
 }
 
+/* 新建站点按钮样式（与AI平台按钮一致） */
+.create-site-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px var(--color-shadow);
+}
+
+.create-site-button:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary-dark);
+  background: var(--color-primary-dark);
+  box-shadow: 0 4px 16px var(--color-shadow-hover);
+}
+
+.create-site-button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ai-platforms-list-small .create-site-button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.9rem;
+}
+
 /* 卡片中的AI平台按钮 */
 .add-site-card-actions {
   margin-top: var(--spacing-md);
@@ -1096,6 +1252,74 @@ svg.site-action-icon path {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+/* ============================================
+   AI平台提示弹窗样式
+   ============================================ */
+.ai-platform-prompt-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+}
+
+.ai-platform-prompt-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.ai-platform-prompt-content {
+  width: 100%;
+  text-align: center;
+}
+
+.ai-platform-prompt-text {
+  margin: 0 0 var(--spacing-lg) 0;
+  font-size: 1.1rem;
+}
+
+.ai-platform-prompt-text strong {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.ai-platform-prompt-steps {
+  text-align: left;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-lg) 0;
+}
+
+.ai-platform-prompt-steps-title {
+  margin: 0 0 var(--spacing-md) 0;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.ai-platform-prompt-steps-list {
+  margin: 0 0 var(--spacing-md) 0;
+  padding-left: var(--spacing-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+}
+
+.ai-platform-prompt-steps-list li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.ai-platform-prompt-alternative {
+  margin: var(--spacing-md) 0 0 0;
+  padding: var(--spacing-md);
+  background: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  line-height: 1.6;
 }
 
 /* ============================================

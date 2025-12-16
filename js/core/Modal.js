@@ -83,7 +83,25 @@ export class Modal {
     title.textContent = isEdit ? "编辑站点信息（YAML格式）" : "站点信息（YAML格式）";
 
     const content = this.modal.querySelector("#modalContent");
-    const saveBtn = this.modal.querySelector("#modalSave");
+    const footer = this.modal.querySelector(".modal-footer");
+    
+    // 确保 footer 有正确的按钮结构（如果之前被清空过）
+    let saveBtn = this.modal.querySelector("#modalSave");
+    let cancelBtn = this.modal.querySelector("#modalCancel");
+    
+    if (!saveBtn || !cancelBtn) {
+      // 恢复 footer 的原始结构
+      footer.innerHTML = `
+        <button type="button" class="modal-button modal-button-secondary" id="modalCancel">取消</button>
+        <button type="button" class="modal-button modal-button-primary" id="modalSave">保存</button>
+      `;
+      saveBtn = this.modal.querySelector("#modalSave");
+      cancelBtn = this.modal.querySelector("#modalCancel");
+    } else {
+      // 确保按钮可见
+      saveBtn.style.display = "";
+      cancelBtn.textContent = "取消";
+    }
     
     const labelText = isEdit 
       ? "编辑站点信息：" 
@@ -118,6 +136,11 @@ export class Modal {
         // 传递原始YAML文本，让调用者解析
         onSave(editedYaml);
       }
+      this.close();
+    };
+
+    // 绑定取消事件
+    cancelBtn.onclick = () => {
       this.close();
     };
 
@@ -210,6 +233,91 @@ export class Modal {
         ${tagsHtml}
       </div>
     `;
+  }
+
+  /**
+   * 显示AI平台提示弹窗
+   * @param {string} url - 站点 URL
+   * @param {string} targetUrl - AI平台URL
+   * @param {string} prompt - 已复制的提示内容
+   */
+  showAiPlatformPrompt(url, targetUrl, prompt) {
+    this.createModal();
+
+    const title = this.modal.querySelector("#modal-title");
+    title.textContent = "使用 AI 生成站点信息";
+
+    const content = this.modal.querySelector("#modalContent");
+    const saveBtn = this.modal.querySelector("#modalSave");
+    const cancelBtn = this.modal.querySelector("#modalCancel");
+    
+    // 隐藏保存按钮，改为显示"新建站点"和"前往AI平台"按钮
+    saveBtn.style.display = "none";
+    cancelBtn.textContent = "取消";
+
+    content.innerHTML = `
+      <div class="ai-platform-prompt-container">
+        <div class="ai-platform-prompt-icon" aria-hidden="true">🤖</div>
+        <div class="ai-platform-prompt-content">
+          <p class="ai-platform-prompt-text">
+            <strong>规则和提示已复制到剪切板！</strong>
+          </p>
+          <div class="ai-platform-prompt-steps">
+            <p class="ai-platform-prompt-steps-title">操作步骤：</p>
+            <ol class="ai-platform-prompt-steps-list">
+              <li>在AI平台中粘贴提示信息</li>
+              <li>生成站点数据（YAML格式）</li>
+              <li>复制生成的YAML数据</li>
+              <li>返回此页面，将YAML数据添加到URL参数 siteData 中</li>
+            </ol>
+            <p class="ai-platform-prompt-alternative">
+              或者：将YAML数据保存到localStorage（键名：pendingSiteData）后刷新页面
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 创建自定义按钮容器
+    const footer = this.modal.querySelector(".modal-footer");
+    const createSiteBtn = document.createElement("button");
+    createSiteBtn.type = "button";
+    createSiteBtn.className = "modal-button modal-button-primary";
+    createSiteBtn.textContent = "新建站点";
+    createSiteBtn.id = "modalCreateSite";
+    
+    const goToAiBtn = document.createElement("button");
+    goToAiBtn.type = "button";
+    goToAiBtn.className = "modal-button modal-button-secondary";
+    goToAiBtn.textContent = "前往AI平台";
+    goToAiBtn.id = "modalGoToAi";
+
+    // 清空footer并添加新按钮
+    footer.innerHTML = "";
+    footer.appendChild(createSiteBtn);
+    footer.appendChild(goToAiBtn);
+    footer.appendChild(cancelBtn);
+
+    // 绑定事件
+    createSiteBtn.onclick = () => {
+      this.close();
+      // 触发自定义事件，让Dashboard处理
+      const event = new CustomEvent("createSiteFromPrompt", { 
+        detail: { url } 
+      });
+      window.dispatchEvent(event);
+    };
+
+    goToAiBtn.onclick = () => {
+      window.open(targetUrl, "_blank");
+      this.close();
+    };
+
+    cancelBtn.onclick = () => {
+      this.close();
+    };
+
+    this.open();
   }
 
   /**
