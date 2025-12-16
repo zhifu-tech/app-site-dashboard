@@ -138,7 +138,7 @@ body.darkmode--activated {
 
 .search-input {
   width: 100%;
-  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-md) 3rem;
+  padding: var(--spacing-md) 3rem var(--spacing-md) 3rem;
   background: var(--color-bg-primary);
   border: 2px solid var(--color-border-primary);
   border-radius: var(--radius-xl);
@@ -146,6 +146,7 @@ body.darkmode--activated {
   font-size: 1rem;
   transition: all var(--transition-base);
   box-shadow: 0 4px 12px var(--color-shadow);
+  box-sizing: border-box;
 }
 
 .search-input:focus {
@@ -170,6 +171,10 @@ body.darkmode--activated {
   font-size: 1.125rem;
   z-index: 1;
   pointer-events: none;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-clear {
@@ -179,18 +184,33 @@ body.darkmode--activated {
   transform: translateY(-50%);
   width: 24px;
   height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   padding: 0;
+  margin: 0;
   background: transparent;
   border: none;
   border-radius: 50%;
   color: var(--color-text-tertiary);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
   transition: all var(--transition-fast);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
+}
+
+.search-clear span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .search-clear:hover {
@@ -424,12 +444,33 @@ kbd {
   min-height: var(--icon-size);
   border-radius: var(--radius-lg);
   background: var(--color-primary-light);
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
   border: 1px solid var(--color-primary-border);
   flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.site-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block !important;
+  transition: opacity 0.2s ease-in-out;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.site-icon img.site-icon-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  margin: auto;
 }
 
 .site-info {
@@ -1491,7 +1532,7 @@ svg.site-action-icon path {
   }
 
   .search-input {
-    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 2.75rem;
+    padding: var(--spacing-sm) 2.75rem var(--spacing-sm) 2.75rem;
     font-size: 0.9rem;
   }
 
@@ -1537,7 +1578,7 @@ svg.site-action-icon path {
   }
 
   .search-input {
-    padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 2.5rem;
+    padding: var(--spacing-xs) 2.5rem var(--spacing-xs) 2.5rem;
     font-size: 0.875rem;
   }
 

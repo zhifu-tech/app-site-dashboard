@@ -25,7 +25,46 @@ export class Renderer {
 
     // 设置图标
     const iconEl = card.querySelector(".site-icon");
-    iconEl.textContent = site.icon || "🔗";
+    if (!iconEl) {
+      console.warn(`[Renderer] 未找到图标元素，站点: ${site.name}`);
+      return;
+    }
+    
+    // 清空内容并重置样式
+    iconEl.innerHTML = "";
+    iconEl.style.display = "flex";
+    
+    if (site.icon && site.icon.trim()) {
+      const iconImg = document.createElement("img");
+      iconImg.src = site.icon;
+      iconImg.alt = `${site.name} 图标`;
+      iconImg.className = "site-icon-img";
+      iconImg.loading = "lazy";
+      
+      // 图片加载成功
+      iconImg.onload = function() {
+        console.debug(`[Renderer] 图标加载成功: ${site.name}`);
+      };
+      
+      // 图片加载失败 - 显示默认图标
+      iconImg.onerror = function() {
+        console.warn(`[Renderer] 图标加载失败: ${site.name} - ${site.icon}`);
+        // 移除失败的图片
+        if (this.parentNode === iconEl) {
+          iconEl.removeChild(this);
+        }
+        // 显示默认图标
+        const fallbackIcon = document.createTextNode("🔗");
+        iconEl.appendChild(fallbackIcon);
+      };
+      
+      // 添加图片到容器
+      iconEl.appendChild(iconImg);
+    } else {
+      // 没有图标URL，显示默认图标
+      iconEl.textContent = "🔗";
+    }
+    
     iconEl.setAttribute("aria-label", `${site.name} 图标`);
 
     // 设置名称和链接
