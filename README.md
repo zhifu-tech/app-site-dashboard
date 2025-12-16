@@ -4,7 +4,7 @@
 
 **注意**：本应用完全通过 API 获取数据，需要配合 `site-dashboard-server` 使用。
 
-[点击体验](https://zhifu-tech.github.io/apps/dashboard/)
+[点击体验](https://site-dashboard.zhifu.tech/)
 
 ## 功能特性
 
