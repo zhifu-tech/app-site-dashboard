@@ -11,12 +11,19 @@
 - 🔍 **智能搜索**：支持全文搜索和标签过滤，使用防抖优化性能
 - 🏷️ **标签系统**：点击标签快速筛选，支持多标签叠加过滤（AND 逻辑）
 - 🔗 **核心链接**：每个网站卡片可添加多个相关链接，方便快速访问
+- 🎯 **Favicon 图标**：自动使用站点的 favicon 作为图标，加载失败时显示默认图标
 - 📱 **响应式设计**：完美适配桌面端和移动端，使用 CSS Grid 自适应布局
 - 🌓 **暗黑模式**：自动适配系统主题，使用 CSS 变量实现主题切换
 - ⚡ **快速访问**：快捷键支持（Ctrl/Cmd + K 聚焦搜索框，Esc 清空搜索）
 - 🎨 **精美卡片**：现代化的卡片式布局，支持悬停效果和动画过渡
 - ♿ **无障碍支持**：完整的 ARIA 标签和键盘导航支持
 - 🏗️ **模块化架构**：ES6+ 模块化设计，清晰的目录结构，易于维护和扩展
+
+## 截屏展示
+
+![仪表板界面](screenshots/dashbaord.png)
+
+仪表板提供了简洁美观的界面，支持智能搜索、标签过滤、快速访问等功能。
 
 ## 使用方法
 
@@ -43,7 +50,7 @@ curl -X POST http://localhost:3002/api/sites \
   -d '{
     "name": "新站点",
     "url": "https://example.com/",
-    "icon": "🔗",
+    "icon": "https://example.com/favicon.ico",
     "description": "站点描述",
     "links": [
       {
@@ -54,6 +61,8 @@ curl -X POST http://localhost:3002/api/sites \
     "tags": ["标签1", "标签2"]
   }'
 ```
+
+**注意**：`icon` 字段应使用站点的 favicon URL，格式为 `https://{域名}/favicon.ico`。如果 favicon 加载失败，会自动显示默认图标。
 
 **注意**：应用完全通过 API 获取数据，不再使用本地文件。所有站点数据由 `site-dashboard-server` 管理。
 
@@ -314,7 +323,7 @@ matchSite(site, searchTerm, tags) {
 ```yaml
 name: 站点名称
 url: https://example.com/
-icon: 🔗
+icon: https://example.com/favicon.ico
 description: 站点描述
 links:
   - text: 相关链接1
@@ -324,7 +333,10 @@ tags:
   - 标签2
 ```
 
-**注意**：应用会直接在浏览器中加载和解析 YAML 文件。
+**注意**：
+- `icon` 字段应使用站点的 favicon URL，格式为 `https://{域名}/favicon.ico`
+- 如果 favicon 加载失败，会自动显示默认图标 🔗
+- 应用完全通过 API 获取数据，不再使用本地文件
 
 **数据获取机制**：
 - **完全通过 API**：所有站点数据从 `site-dashboard-server` API 获取
