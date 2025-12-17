@@ -376,13 +376,53 @@ kbd {
 }
 
 /* ============================================
-   网站卡片网格
+   网站卡片网格 - 瀑布流布局
    ============================================ */
 .sites-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--card-min-width), 1fr));
-  gap: var(--card-gap);
+  position: relative;
   width: 100%;
+}
+
+/* 卡片在瀑布流中的基础样式 */
+.sites-grid .site-card {
+  position: absolute;
+  width: var(--masonry-card-width);
+  transition: transform var(--transition-base), opacity var(--transition-base);
+}
+
+/* 响应式：根据屏幕宽度自动调整卡片宽度和列数 */
+@media (min-width: 1400px) {
+  .sites-grid {
+    --masonry-card-width: calc((100% - 3 * var(--card-gap)) / 4);
+    --masonry-columns: 4;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .sites-grid {
+    --masonry-card-width: calc((100% - 2 * var(--card-gap)) / 3);
+    --masonry-columns: 3;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sites-grid {
+    --masonry-card-width: calc((100% - 1 * var(--card-gap)) / 2);
+    --masonry-columns: 2;
+  }
+}
+
+@media (max-width: 767px) {
+  .sites-grid {
+    --masonry-card-width: 100%;
+    --masonry-columns: 1;
+  }
+  
+  .sites-grid .site-card {
+    position: relative;
+    width: 100%;
+    margin-bottom: var(--card-gap);
+  }
 }
 
 /* ============================================
@@ -1542,8 +1582,13 @@ svg.site-action-icon path {
   }
 
   .sites-grid {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-md);
+    column-count: 1;
+    column-width: 100%;
+    column-gap: var(--spacing-md);
+  }
+  
+  .sites-grid .site-card {
+    margin-bottom: var(--spacing-md);
   }
 
   .site-card {

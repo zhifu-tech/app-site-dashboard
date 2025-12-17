@@ -197,6 +197,127 @@ export class Renderer {
     if (detectedUrl) {
       this.showAddSiteCard(grid, detectedUrl);
     }
+
+    // 应用瀑布流布局
+    this.applyMasonryLayout(grid);
+  }
+
+  /**
+   * 应用瀑布流布局
+   * @param {HTMLElement} grid - 网格容器元素
+   */
+  applyMasonryLayout(grid) {
+    // 移动端使用相对定位，不需要瀑布流
+    if (window.innerWidth <= 767) {
+      return;
+    }
+
+    const cards = Array.from(grid.querySelectorAll(".site-card, .add-site-card"));
+    if (cards.length === 0) {
+      return;
+    }
+
+    // 获取 CSS 变量值
+    const cardWidth = this.getMasonryCardWidth();
+    const gap = parseFloat(getComputedStyle(grid).getPropertyValue("--card-gap")) || 16;
+    const columns = this.getMasonryColumns();
+
+    // 初始化列高度数组
+    const columnHeights = new Array(columns).fill(0);
+
+    // 计算每个卡片的位置
+    cards.forEach((card, index) => {
+      // 确保卡片可见并测量高度
+      card.style.visibility = "hidden";
+      card.style.position = "absolute";
+      card.style.width = `${cardWidth}px`;
+      card.style.opacity = "0";
+
+      // 找到最短的列
+      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+
+      // 计算位置
+      const left = shortestColumnIndex * (cardWidth + gap);
+      const top = columnHeights[shortestColumnIndex];
+
+      // 设置位置
+      card.style.left = `${left}px`;
+      card.style.top = `${top}px`;
+
+      // 更新列高度
+      // 需要先添加到 DOM 才能获取实际高度
+      const cardHeight = card.offsetHeight || card.getBoundingClientRect().height;
+      columnHeights[shortestColumnIndex] += cardHeight + gap;
+
+      // 显示卡片
+      card.style.visibility = "visible";
+      card.style.opacity = "1";
+    });
+
+    // 设置容器高度
+    const maxHeight = Math.max(...columnHeights);
+    grid.style.height = `${maxHeight}px`;
+
+    // 监听窗口大小变化，重新布局
+    let resizeTimer;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        this.applyMasonryLayout(grid);
+      }, 250);
+    };
+
+    // 移除旧的监听器（如果存在）
+    if (grid._masonryResizeHandler) {
+      window.removeEventListener("resize", grid._masonryResizeHandler);
+    }
+
+    // 添加新的监听器
+    grid._masonryResizeHandler = handleResize;
+    window.addEventListener("resize", handleResize);
+  }
+
+  /**
+   * 获取瀑布流卡片宽度
+   * @returns {number} 卡片宽度（像素）
+   */
+  getMasonryCardWidth() {
+    const grid = document.querySelector(".sites-grid");
+    if (!grid) return 280;
+
+    const computedStyle = getComputedStyle(grid);
+    const cardWidth = computedStyle.getPropertyValue("--masonry-card-width");
+    
+    if (cardWidth) {
+      // 解析 calc() 表达式
+      const match = cardWidth.match(/calc\((.+)\)/);
+      if (match) {
+        // 简单处理：计算实际值
+        const containerWidth = grid.offsetWidth || grid.clientWidth;
+        const columns = this.getMasonryColumns();
+        const gap = parseFloat(computedStyle.getPropertyValue("--card-gap")) || 16;
+        return (containerWidth - (columns - 1) * gap) / columns;
+      }
+      return parseFloat(cardWidth);
+    }
+
+    // 默认计算
+    const containerWidth = grid.offsetWidth || grid.clientWidth;
+    const columns = this.getMasonryColumns();
+    const gap = parseFloat(computedStyle.getPropertyValue("--card-gap")) || 16;
+    return (containerWidth - (columns - 1) * gap) / columns;
+  }
+
+  /**
+   * 获取瀑布流列数
+   * @returns {number} 列数
+   */
+  getMasonryColumns() {
+    const width = window.innerWidth;
+    if (width >= 1400) return 4;
+    if (width >= 1024) return 3;
+    if (width >= 768) return 2;
+    return 1;
   }
 
   /**
