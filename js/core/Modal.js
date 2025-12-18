@@ -268,11 +268,7 @@ export class Modal {
               <li>在AI平台中粘贴提示信息</li>
               <li>生成站点数据（YAML格式）</li>
               <li>复制生成的YAML数据</li>
-              <li>返回此页面，将YAML数据添加到URL参数 siteData 中</li>
             </ol>
-            <p class="ai-platform-prompt-alternative">
-              或者：将YAML数据保存到localStorage（键名：pendingSiteData）后刷新页面
-            </p>
           </div>
         </div>
       </div>

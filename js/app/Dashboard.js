@@ -417,7 +417,7 @@ export class Dashboard {
       const returnUrl = `${window.location.origin}${window.location.pathname}?siteUrl=${encodeURIComponent(url)}`;
       
       // 将返回URL也复制到剪切板（方便用户使用）
-      const fullPrompt = `${prompt}\n\n请将生成的YAML数据复制后，返回以下页面并粘贴到URL参数 siteData 中：\n${returnUrl}\n\n或者，您可以将YAML数据保存到浏览器的localStorage中，键名为 "pendingSiteData"，然后刷新页面。`;
+      const fullPrompt = `${prompt}\n\n返回URL：\n${returnUrl}`;
       
       // 再次复制完整提示（包含返回URL）
       await this.rulesLoader.copyToClipboard(fullPrompt);
